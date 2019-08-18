@@ -12,5 +12,13 @@
     "require": {
         "php": "~7.1.0",
         "lumille/app": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lumille\\Routing\\": ""
+        },
+        "files": [
+            "./helpers.php"
+        ]
     }
 }
