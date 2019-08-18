@@ -1,0 +1,16 @@
+{
+    "name": "lumille/routing",
+    "description": "Lumille routing",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Frederic KOLLER",
+            "email": "koller.f@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "~7.1.0",
+        "lumille/app": "*"
+    }
+}
