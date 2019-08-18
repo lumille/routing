@@ -46,7 +46,7 @@ class Route
             }
         }
 
-        $this->matches = $parameters;  // On sauvegarde les paramètre dans l'instance pour plus tard
+        $this->matches = $parameters;
         return true;
     }
 
@@ -103,10 +103,12 @@ class Route
     public function getUrl ($params)
     {
         $path = $this->path;
+
         foreach ($params as $k => $v) {
             $path = str_replace("{$k}", $v, $path);
         }
-        return $path;
+
+        return $path === "" ? "/" : $path;
     }
 
     /**
