@@ -4,20 +4,40 @@ namespace Lumille\Routing;
 
 class Route
 {
+    /**
+     * @var string
+     */
     private $path;
+
+    /**
+     * @var callable
+     */
     private $callable;
 
     /**
      * @var Router
      */
     private $router;
+
+    /**
+     * @var array
+     */
     private $matches = [];
+
+    /**
+     * @var array
+     */
     private $params = [];
+
+    /**
+     * @var string
+     */
+    private $prefix;
 
     public function __construct ($path, $callable)
     {
-        $this->path = trim($path, '/');  // On retire les / inutils
-        $this->callable = $callable;
+        $this->setPath($path);
+        $this->setCallable($callable);
     }
 
     /**
@@ -27,6 +47,8 @@ class Route
     public function match ($url)
     {
         $url = trim($url, '/');
+        $this->updatePathWithPrefix();
+
         preg_match_all('#{([\w]+)}#i', $this->path, $params);
         $path = preg_replace_callback('#{([\w]+)}#', [$this, 'paramMatch'], $this->path);
         $regex = "#^$path$#i";
@@ -63,6 +85,48 @@ class Route
         $args = $this->getParameters($callable);
 
         return \call_user_func_array($callable, $args);
+    }
+
+    /**
+     * @param string $path
+     * @return Route
+     */
+    public function setPath (string $path): Route
+    {
+        $this->path = trim($path, '/');
+
+        return $this;
+    }
+
+    /**
+     * @param string|callable $callable
+     * @return Route
+     */
+    public function setCallable ($callable): Route
+    {
+
+        $this->callable = $callable;
+
+        return $this;
+    }
+
+    /**
+     * @param string $prefix
+     * @return Route
+     */
+    public function setPrefix (string $prefix): Route
+    {
+        $this->prefix = $prefix;
+        $this->updatePathWithPrefix();;
+        return $this;
+    }
+
+    public function updatePathWithPrefix ()
+    {
+        if ($this->prefix || $this->router->getPrefix()) {
+            $prefix = current(array_filter([$this->prefix, $this->router->getPrefix()]));
+            $this->path = ltrim($prefix . '/' . $this->path, '/');
+        }
     }
 
     private function paramMatch ($match)

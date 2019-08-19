@@ -10,20 +10,16 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "php": "~7.1.0",
-        "lumille/app": "~0.0"
+        "php": "~7.1.0"
     },
     "autoload": {
         "psr-4": {
             "Lumille\\Routing\\": ""
-        },
-        "files": [
-            "./helpers.php"
-        ]
+        }
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "0.0.3"
+            "dev-master": "0.1.0"
         }
     }
 }
