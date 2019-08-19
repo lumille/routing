@@ -16,10 +16,5 @@
         "psr-4": {
             "Lumille\\Routing\\": ""
         }
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "0.1.0"
-        }
     }
 }
