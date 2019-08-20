@@ -38,23 +38,12 @@ class RouteCollection
      * @param $route
      * @param $name
      */
-    public function setRoute ($methods, $route, $name)
+    public function setRoute ($route, $path = null)
     {
-        if (!is_array($methods)) {
-            $methods = [$methods];
+        if($path){
+            $this->routes[$path] = $route;
         }
-
-        if($name){
-            $this->namedRoutes[$name] = $route;
-        }
-
-        foreach ($methods as $method) {
-            $method = \mb_convert_case($method, \MB_CASE_UPPER);
-            if (!isset($this->routes[$method])) {
-                $this->routes[$method] = [];
-            }
-            $this->routes[$method][] = $route;
-        }
+        $this->routes[] = $route;
     }
 
     /**
@@ -80,5 +69,22 @@ class RouteCollection
     public function getRouteByName ($name)
     {
         return $this->namedRoutes[$name] ?? null;
+    }
+
+    public function getRouteByPath ($path)
+    {
+
+        return $this->routes[$path] ?? null;
+    }
+
+    /**
+     * @param Route
+     * @param string $name
+     */
+    public function setNamedRoutes (Route $route, $name = null)
+    {
+        if ($name) {
+            $this->namedRoutes[$name] = $route;
+        }
     }
 }

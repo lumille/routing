@@ -2,17 +2,10 @@
 
 namespace Lumille\Routing;
 
+use Symfony\Component\HttpFoundation\Request;
+
 class Router
 {
-    /**
-     * @var string
-     */
-    private $namespace;
-
-    /**
-     * @var string
-     */
-    private $request;
 
     /**
      * @var array
@@ -23,10 +16,13 @@ class Router
      * @var string
      */
     private $prefix;
+    /**
+     * @var Request
+     */
+    private $request;
 
-    public function __construct ($namespace, $request)
+    public function __construct (Request $request)
     {
-        $this->namespace = $namespace;
         $this->request = $request;
     }
 
@@ -62,10 +58,11 @@ class Router
 
     public function prefix ($prefix, $callable)
     {
-        $router = new Router($this->getNamespace(), $this->getRequest());
+        $router = new Router($this->request);
+        $prefix = rtrim($prefix, '/');
         $prefix = $this->prefix . $prefix;
         $router->setPrefix($prefix);
-        \call_user_func_array($callable, [$router]);
+        return \call_user_func_array($callable, [$router]);
     }
 
     private function addRoute ($methods, $path, $callable, $name = null)
@@ -74,39 +71,55 @@ class Router
             $methods = [$methods];
         }
 
+        $path = $this->rtrim($path);
+        $path = $this->addPrefix($path);
+
+        $_route = RouteCollection::getInstance()->getRouteByPath($path);
+
+        if ($_route) {
+            $_route->setAcceptMethods($methods);
+            RouteCollection::getInstance()->setNamedRoutes($_route, $path);
+            return;
+        }
+
         $route = new Route($path, $callable);
         $route->setRouter($this);
+        $route->setAcceptMethods($methods);
 
-        if(is_string($callable) && $name === null){
+        if (is_string($callable) && $name === null) {
             $name = $callable;
         }
 
-        if($name){
-            $this->namedRoutes[$name] = $route;
-        }
+        RouteCollection::getInstance()->setNamedRoutes($route, $name);
 
         RouteCollection::getInstance()
-            ->setRoute($methods, $route, $name);
+            ->setRoute($route, $path);
 
         return $route;
     }
 
     public function run ()
     {
+        $uri = $this->request->getPathInfo();
+        $uri = $this->rtrim($uri);
         $routes = RouteCollection::getInstance()
             ->getAllRoutes();
-        if (!isset($routes[$_SERVER['REQUEST_METHOD']])) {
-            throw new RouterException('REQUEST_METHOD does not exist');
-        }
-        foreach ($routes[$_SERVER['REQUEST_METHOD']] as $route) {
-            if ($route->match($this->request)) {
-                return $route->call();
+
+        foreach ($routes as $route) {
+            if ($route->match($uri)) {
+                if ($route->checkAcceptMethods($this->request->getMethod())) {
+                    return $route->call();
+                }
+
+                throw new MethodNotAcceptedException("Method not accepted");
             }
         }
-        throw new RouterException('No matching routes');
+
+        throw new UrlNotFoundException('No matching routes');
     }
 
-    public function getUrl ($name, $params = [])
+
+    public  function getUrl ($name, $params = [])
     {
         $namedRoutes = RouteCollection::getInstance()
             ->getNamedRoutes();
@@ -119,31 +132,27 @@ class Router
     /**
      * @return mixed
      */
-    public function getNamespace ()
-    {
-        return $this->namespace;
-    }
-
-    /**
-     * @return array
-     */
-    public function getRoutes (): array
-    {
-        return $this->routes;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getPrefix ()
+    public
+    function getPrefix ()
     {
         return $this->prefix;
     }
 
+    public
+    function addPrefix ($path)
+    {
+        if ($this->prefix) {
+            $path = $this->prefix . $path;
+        }
+
+        return $path;
+    }
+
     /**
-     * @return string
+     * @return Request
      */
-    public function getRequest (): string
+    public
+    function getRequest (): Request
     {
         return $this->request;
     }
@@ -152,10 +161,20 @@ class Router
      * @param string $prefix
      * @return Router
      */
-    public function setPrefix (string $prefix): Router
+    public
+    function setPrefix (string $prefix): Router
     {
         $prefix = rtrim($prefix);
         $this->prefix .= $prefix;
         return $this;
+    }
+
+    private function rtrim ($path)
+    {
+        if (strlen($path) > 1) {
+            $path = rtrim($path, '/');
+        }
+
+        return $path;
     }
 }

@@ -29,6 +29,8 @@ class Route
      */
     private $params = [];
 
+    private $acceptMethods = [];
+
     /**
      * @var string
      */
@@ -40,6 +42,15 @@ class Route
         $this->setCallable($callable);
     }
 
+    public function checkAcceptMethods ($method)
+    {
+        if (!\in_array($method, $this->getAcceptMethods())) {
+            throw new MethodNotAcceptedException("Method is not accepted");
+        }
+
+        return true;
+    }
+
     /**
      * Permettra de capturer l'url avec les paramètre
      * get('/posts/:slug-:id') par exemple
@@ -47,7 +58,6 @@ class Route
     public function match ($url)
     {
         $url = rtrim($url, '/');
-        $this->updatePathWithPrefix();
 
         preg_match_all('#{([\w]+)}#i', $this->path, $params);
         $path = preg_replace_callback('#{([\w]+)}#', [$this, 'paramMatch'], $this->path);
@@ -74,6 +84,7 @@ class Route
 
     public function call ()
     {
+        return [$this->callable, $this->matches];
         $callable = $this->callable;
         if (!\is_callable($callable)) {
             @list($controller, $method) = explode('::', $this->callable);
@@ -120,12 +131,32 @@ class Route
         return $this;
     }
 
-    public function updatePathWithPrefix ()
+    /**
+     * @return array
+     */
+    public function getAcceptMethods (): array
     {
-        if ($this->prefix || $this->router->getPrefix()) {
-            $prefix = current(array_filter([$this->prefix, $this->router->getPrefix()]));
-            $this->path = rtrim(rtrim($prefix, '/') . $this->path, '/');
+        return $this->acceptMethods;
+    }
+
+    /**
+     * @param array $acceptMethods
+     */
+    public function setAcceptMethods (array $acceptMethods)
+    {
+        foreach ($acceptMethods as $method) {
+            $this->acceptMethods[] = $method;
         }
+
+        \array_unique($this->acceptMethods);
+    }
+
+    /**
+     * @return string
+     */
+    public function getPath (): string
+    {
+        return $this->path;
     }
 
     private function paramMatch ($match)
