@@ -63,6 +63,7 @@ class Router
     public function prefix ($prefix, $callable)
     {
         $router = new Router($this->getNamespace(), $this->getRequest());
+        $prefix = $this->prefix . $prefix;
         $router->setPrefix($prefix);
         \call_user_func_array($callable, [$router]);
     }
@@ -153,7 +154,8 @@ class Router
      */
     public function setPrefix (string $prefix): Router
     {
-        $this->prefix = $prefix;
+        $prefix = rtrim($prefix);
+        $this->prefix .= $prefix;
         return $this;
     }
 }

@@ -46,7 +46,7 @@ class Route
      **/
     public function match ($url)
     {
-        $url = trim($url, '/');
+        $url = rtrim($url, '/');
         $this->updatePathWithPrefix();
 
         preg_match_all('#{([\w]+)}#i', $this->path, $params);
@@ -93,7 +93,7 @@ class Route
      */
     public function setPath (string $path): Route
     {
-        $this->path = trim($path, '/');
+        $this->path = rtrim($path, '/');
 
         return $this;
     }
@@ -117,7 +117,6 @@ class Route
     public function setPrefix (string $prefix): Route
     {
         $this->prefix = $prefix;
-        $this->updatePathWithPrefix();;
         return $this;
     }
 
@@ -125,7 +124,7 @@ class Route
     {
         if ($this->prefix || $this->router->getPrefix()) {
             $prefix = current(array_filter([$this->prefix, $this->router->getPrefix()]));
-            $this->path = ltrim($prefix . '/' . $this->path, '/');
+            $this->path = rtrim(rtrim($prefix, '/') . $this->path, '/');
         }
     }
 
