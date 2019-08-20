@@ -184,8 +184,9 @@ class Route
 
     /**
      * @param mixed $router
+     * @return Router
      */
-    public function setRouter ($router): void
+    public function setRouter ($router)
     {
         $this->router = $router;
     }
