@@ -84,7 +84,7 @@ class Route
 
         $args = $this->getParameters($callable);
 
-        return \call_user_func_array($callable, $args);
+        return [$callable, $args];
     }
 
     /**
