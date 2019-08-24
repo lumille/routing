@@ -5,6 +5,7 @@ namespace Lumille\Routing\tests;
 
 
 use Lumille\Routing\MethodNotAcceptedException;
+use Lumille\Routing\RouteCollection;
 use Lumille\Routing\Router;
 use Lumille\Routing\RouterException;
 use Lumille\Routing\UrlNotFoundException;
@@ -14,6 +15,14 @@ use Symfony\Component\HttpFoundation\Request;
 
 class RouterTest extends TestCase
 {
+
+    public function testOptionalParams(){
+        $request = Request::create('/hello/say-hello/fred', "GET");
+        $route = new Router($request);
+        $route->get('/hello/{slug?}/{name?}', 'HomeController::index');
+        list($callable, $args) = $route->run();
+        $this->assertEquals('HomeController::index', $callable);
+    }
 
     public function testGetHome ()
     {

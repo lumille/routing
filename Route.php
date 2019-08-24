@@ -5,9 +5,9 @@ namespace Lumille\Routing;
 class Route
 {
     /**
-     * @var string
+     * @var array
      */
-    private $path;
+    private $paths = [];
 
     /**
      * @var callable
@@ -36,13 +36,13 @@ class Route
      */
     private $prefix;
 
-    public function __construct ($path, $callable)
+    public function __construct($path, $callable)
     {
         $this->setPath($path);
         $this->setCallable($callable);
     }
 
-    public function checkAcceptMethods ($method)
+    public function checkAcceptMethods($method)
     {
         if (!\in_array($method, $this->getAcceptMethods())) {
             throw new MethodNotAcceptedException("Method is not accepted");
@@ -55,56 +55,64 @@ class Route
      * Permettra de capturer l'url avec les paramètre
      * get('/posts/:slug-:id') par exemple
      **/
-    public function match ($url)
+    public function match($url)
     {
         $url = rtrim($url, '/');
+        $response = false;
 
-        preg_match_all('#{([\w]+)}#i', $this->path, $params);
-        $path = preg_replace_callback('#{([\w]+)}#', [$this, 'paramMatch'], $this->path);
-        $regex = "#^$path$#i";
-        if (!preg_match($regex, $url, $matches)) {
-            return false;
-        }
+        foreach ($this->paths as $path) {
+            preg_match_all('#{([\w]+)}#i', $path, $params);
+            $path = preg_replace_callback('#{([\w]+)}#', [$this, 'paramMatch'], $path);
+            $regex = "#^$path$#i";
+            if (!preg_match($regex, $url, $matches)) {
+                continue;
+            }
 
-        $parameters = [];
-        if ($params && is_array($params)) {
-            array_shift($matches);
-            \array_shift($params);
-            $params = current($params);
-            foreach ($params as $k => $param) {
-                if (isset($matches[$k])) {
-                    $parameters[$param] = $matches[$k];
+            $parameters = [];
+            if ($params && is_array($params)) {
+                array_shift($matches);
+                \array_shift($params);
+                $params = current($params);
+                foreach ($params as $k => $param) {
+                    if (isset($matches[$k])) {
+                        $parameters[$param] = $matches[$k];
+                    }
                 }
             }
+            $this->matches = $parameters;
+            $response = true;
+            break;
         }
 
-        $this->matches = $parameters;
-        return true;
+        return $response;
     }
 
-    public function call ()
+    public function call()
     {
         return [$this->callable, $this->matches];
-        $callable = $this->callable;
-        if (!\is_callable($callable)) {
-            @list($controller, $method) = explode('::', $this->callable);
-            $controller = $this->router->getNamespace() . $controller;
-            $controller = new $controller;
-            $callable = [$controller, $method];
-        }
-
-        $args = $this->getParameters($callable);
-
-        return [$callable, $args];
     }
 
     /**
      * @param string $path
      * @return Route
      */
-    public function setPath (string $path): Route
+    public function setPath(string $path): Route
     {
-        $this->path = rtrim($path, '/');
+        $path = rtrim($path, '/');
+        preg_match_all("#{\w+\?}#", $path, $matches);
+        if (!empty($matches)) {
+            $matches = array_shift($matches);
+            $newPath = preg_replace("#\?#", "", $path);
+            $this->paths[] = $newPath;
+            $matches = array_reverse($matches);
+            foreach ($matches as $m) {
+                $newPath = rtrim(str_replace($m, "", $path), '/');
+                $this->paths[] = $newPath;
+                $path = $newPath;
+             }
+        } else {
+            $this->paths[] = $path;
+        }
 
         return $this;
     }
@@ -113,7 +121,7 @@ class Route
      * @param string|callable $callable
      * @return Route
      */
-    public function setCallable ($callable): Route
+    public function setCallable($callable): Route
     {
 
         $this->callable = $callable;
@@ -125,7 +133,7 @@ class Route
      * @param string $prefix
      * @return Route
      */
-    public function setPrefix (string $prefix): Route
+    public function setPrefix(string $prefix): Route
     {
         $this->prefix = $prefix;
         return $this;
@@ -134,7 +142,7 @@ class Route
     /**
      * @return array
      */
-    public function getAcceptMethods (): array
+    public function getAcceptMethods(): array
     {
         return $this->acceptMethods;
     }
@@ -142,7 +150,7 @@ class Route
     /**
      * @param array $acceptMethods
      */
-    public function setAcceptMethods (array $acceptMethods)
+    public function setAcceptMethods(array $acceptMethods)
     {
         foreach ($acceptMethods as $method) {
             $this->acceptMethods[] = $method;
@@ -154,12 +162,12 @@ class Route
     /**
      * @return string
      */
-    public function getPath (): string
+    public function getPath(): string
     {
-        return $this->path;
+        return $this->paths;
     }
 
-    private function paramMatch ($match)
+    private function paramMatch($match)
     {
         if (isset($this->params[$match[1]])) {
             return '(' . $this->params[$match[1]] . ')';
@@ -167,7 +175,7 @@ class Route
         return '([^/]+)';
     }
 
-    private function getParameters ($callable)
+    private function getParameters($callable)
     {
         $args = [];
 
@@ -188,15 +196,15 @@ class Route
         return $args;
     }
 
-    public function with ($param, $regex)
+    public function with($param, $regex)
     {
         $this->params[$param] = str_replace('(', '(?:', $regex);
         return $this; // On retourne tjrs l'objet pour enchainer les arguments
     }
 
-    public function getUrl ($params)
+    public function getUrl($params)
     {
-        $path = $this->path;
+        $path = $this->paths;
 
         foreach ($params as $k => $v) {
             $path = str_replace("{$k}", $v, $path);
@@ -208,7 +216,7 @@ class Route
     /**
      * @return mixed
      */
-    public function getRouter ()
+    public function getRouter()
     {
         return $this->router;
     }
@@ -217,7 +225,7 @@ class Route
      * @param mixed $router
      * @return Router
      */
-    public function setRouter ($router)
+    public function setRouter($router)
     {
         $this->router = $router;
     }
